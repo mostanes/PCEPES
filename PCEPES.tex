@@ -1,0 +1,122 @@
+\documentclass[a4paper,utf8,11pt]{article}
+\usepackage{geometry}
+\geometry{a4paper, left=1in, right=1in, top=1in, bottom=1in}
+\usepackage{url}
+
+\title{Personal Computing Extensions on POSIX and EMIOS Systems}
+\author{}
+\date{Draft 0.2 r5}
+
+\begin{document}
+	\maketitle
+	
+	\clearpage
+	\section{Introduction}
+	\subsection{What do we refer to as Modern Personal Computing?}
+	When speaking about personal computing, it may come to one's mind the IBM Personal Computer model -- a desktop computer which is typically used by one person (at a time). Here we talk not only about that particular form, but we generalize to other forms of computing oriented towards a person (many of which enabled by technologies much newer than the IBM PC). Here we give a definition of the personal computing we talk about:
+	\paragraph{The definition of personal computing used in this document}\quad\\
+	The personal computing is defined through the following:
+	\begin{itemize}
+		\item is based around a device used by a single person or a few people
+		\item the user(s) typically own(s) the device and administrate it
+		\item happens on the device's processing elements
+	\end{itemize}
+	In particular, we note that the software falling under the umbrella of personal computing may be interface software for cloud-based services, but only the interface, and not the in-cloud backend.
+	\paragraph{Traits of the "modern" personal computing}\quad\\
+	While some devices are not connected to any network or running on a private network, which should not be overlooked by this document, many modern devices have access to the Internet. The form factors are also very diverse: desktop computers, laptops, tablets, smartphones and others. More importantly, modern personal computing implies running multiple applications at the same time, from multiple vendors, focusing more on interaction with the user and less on batch processing.
+	\subsection{Why the PC extensions for POSIX systems?}
+	While the POSIX standard has achieved great support among modern operating systems due to its roots in Unix (and its programmer-friendly nature), it is, to a great extent, designed to allow mainframe-like systems portably run batch jobs. In particular, there is little support for interactivity, and the high level interfaces were left to software distributions and system administrators. This is harder to accept for personal computing -- unnecessarily delegating tasks to the system administrator results in extra time spent understanding and configuring the system, and since the user and system administrator are typically the same person, this ends up in wasted time.\\
+	Finally, the threat model for personal computing is primarily that of untrusted applications rather than untrusted users (since there is often a single user of the system anyway), unlike that of the POSIX standard (where applications are "trusted" and users not). In particular, modern software is built from numerous components from many third-parties. Since the software that runs personal computing tasks often performs key functions for the smooth working of modern society and handles a digital shadow of the user, proper protection against data loss, identity theft and privacy violations should be designed into the high-level architecture of the computing systems and built into operating systems. The extra time necessary for configuring the appropriate safeguards against this threat model, which is not covered by the POSIX model, is too great to be left to individual users.\\
+	For these reasons, we aim to supplement POSIX-like systems with a set of interfaces that suit personal computing.
+	\clearpage
+	\section{Contents}
+	\tableofcontents
+	\clearpage
+	\section{Security}
+	Personal computing nowadays needs to work with personal data, including private messages or identity documents. To prevent loss and leakage of such sensitive data, security must be thoroughly enforced even between pieces of software run by the same user. The concepts behind the methods to achieve this security are covered in MLIOS. However, there are some issues specific to personal computing which are not covered by it. Here we present a few further considerations.
+	\subsection{Access control}
+	MLIOS mentions, besides capability-based security, access control mechanisms. We will cover here the use of AC in personal computing.
+	Traditional role-based access control is of less use compared to enterprise deployments, since users rarely change roles. However, it can be applied to applications very effectively, granting permissions based on the role of applications.\\
+	Discretionary access control is typically the main protection method in personal computing, in that users will grant access to the objects they own on an individual basis to other users and to applications. It should be noted that traditional Unix file permissions (user, group, global) are severely challenged by this model in personal computing (unlike servers for service providers).\\
+	Mandatory access control is trickier to use in personal computing. While MAC is great in rigid organizations, where each person has a well defined role and must not be able to access classified information at their security clearance, this concept maps with some difficulty to more civilian settings, where users expect being able to share information. As such, MAC is best used to prevent access of sensitive information (such as identity documents, or private messages) to untrusted applications (third-party software of dubious origin), which are sometimes necessary to achieve specific tasks. Through MAC, these untrusted applications would be unable to access sensitive information, even if, through some confused deputy attack, were to obtain a token of the object.
+	\subsection{Sane defaults}
+	As is the general case with securization, access control policies can hamper usability of a product if sane defaults are not provided -- as stated in the introduction to this document, it cannot be expected of the end user to have to verify individually each piece of software on the system and create the required policies to ensure the security of the system. It is therefore recommended that a repository of common policies is available to the users, with said policies verified by multiple users and cryptographically signed. A user would then mainly need to set a policy for accepting repository policies, based on various user-defined criteria about the verifying repository users, to achieve a satisfying level of security, without undue burden to the end user.\footnote{This concept is rather similar to that of liquid democracy}
+	\clearpage
+	\section{Package Management}
+	Package management has tremendously improved system management, by ensuring software is correctly added to, and very importantly, correctly removed from the system, including the necessary dependencies. Still, dependency management is not yet fully solved by existing package managers, and tasks specific to personal computing can still be burdensome to user. Beyond the software deployment section in EMIOS, the following sections should be considered in personal computing.
+	\subsection{System-wide and per-user software}
+	Package managers should support installation of software both system-wide, accessible through top-level folders, and per-user, in the folders local to the user. Installing software per-user must not require administrative access if the installation process does not need access to privileged resources.\\
+	It is recommend that package managers allow the upgrade of software packages used by one or more users to a system-wide installation. It is recommended that such an upgrade can be configured to remove the multiple copies from user storage. In less-PC and more-enterprise settings (such as small offices), it might be desirable to have more complex policies for system-wide and per-user software, as well as the upgrade process.
+	\subsection{Application separation and sub-package tags}
+	Package managers should allow sub-packages, which should be standalone packages with different kinds of installable contents of the application. These packages should be tagged with their parent super-package, as well as the type of content (binaries, manual pages, other documentation, development headers, etc.). The super-package should contain a tag listing the sub-packages available. Installing a super-package should install the sub-packages with the tags enabled for default installation. It is recommended that package managers allow efficient installation and removal of different types of sub-packages on wide sets of packages (system-wide or through a list, etc.), such that user can conveniently install only the required application components system-wide.\\
+	Furthermore, modular applications should be packaged through the mechanism of EMIOS component packages. In particular, distributions should not re-package the same application, but with different sets of plugins, as different packages, but merely provide an OS-level package for the application and provide plugins through component-level packages.\\
+	For applications that have yet to transition to EMIOS or their transition is unfeasible, software distributions may consider adding hints to package managers about component installation for the given applications, such as taking into account plugin directories when removing applications, learning plugins from the directory structure or others.
+	\subsection{Multiversioning}
+	Package managers must support installing multiple versions of the same software in parallel. Nevertheless, it is strongly recommended that the PM dependency solvers converge to solutions that require the fewest installed versions of packages.\\
+	Package managers should typically default to the latest available version, but may, according to various heuristics, choose to suggest an older version. In such cases, the PMs must state so, the suggested version, the latest version and the reason why it was suggested.\\
+	An example heuristic for suggesting an older version of an application is if the newer version requires a newer version of the base libraries (compared to those installed), the system uses a significant amount of disk space, and replacing the base libraries requires an upgrade of many other software packages and the user prefers not to upgrade at the moment.\\
+	An example heuristic for PM dependency solvers to require the fewest installed versions is to choose the optimal dependency solution for a given cost function that includes disk usage and change/breakage aversion of users as parameters.
+	\subsection{Dependency discovery and self-packaging}
+	Packages should be built in a clean environment, so that all package dependencies are accounted for. Software distributions should supply the build automation tools to allow self-packaging of software from sources outside of the distribution's repositories. These tools should include all the appropriate containerization procedures such that packages are built to the software distribution's standards.
+	\clearpage
+	\section{Configuration management}
+	An important part of personal computing is configuring software. If in enterprise deployments, there are only a few software components deployed individually to computers, and there are system administrators who can update the configuration at need, the same cannot be said of personal computing. Often, each computer has a slightly different configuration, and most users are interested in getting some job done through the computer rather than manage configurations. This is not to say that users will not configure their software, but the step of configuration should not be redundant.\\
+	As such, configuration is in particular need of version control systems, which would allow rolling back misconfigurations and patching the configuration files with various common settings (automatic copying and merging). Therefore the system configuration folder (/etc) should be version controlled. A system version control software must be used, so as to preserve filesystem metadata, including security attributes of the files. The SVCS and software distribution must act in concert to prevent sensitive files (such as those preserving password hashes, private keys or other key material) from being stored in the version control repository.
+	\clearpage
+	\section{User interface}
+	\subsection{Seats and Sessions}
+	\paragraph{Seats}
+	In some setups, it may make sense to use a single computer to serve multiple users, each with their own I/O peripherals (keyboards, mice, displays, etc.). Moreover, it is now common to access computers remotely, through remote shell protocols (such as ssh). For this reason, operating systems should be designed to support multiple seats, including remote seats (where the I/O peripherals are the proxies set up by the remote access software). In the context of PCE, the term seat will refer to a set of peripherals designated by the system administrator as being independently capable to allow a user to access the shell and are private to the user currently accessing them. Outside the seat, the peripherals are shared; the sharing policy is up to the operating system and system administrators. Peripherals that are included in a seat are "bound to the seat". Peripherals that can be included in a seat are "boundable". System administrators may change the seat to which boundable peripherals are bound to as required.
+	\paragraph{Boundable peripherals}
+	Operating systems should minimize assumptions that certain peripherals are not boundable; for example a printer may be bound to a seat (each user may have their own printer), and a display may not (such as process monitoring display).\\
+	Multimedia peripherals must be boundable at the granularity of individual outputs (individual displays and speakers).
+	\paragraph{Sessions}
+	Operating systems should implement user sessions independently of seats. In particular, a session may be detached from its seat and reattached to the same seat or a different seat at a later time. Operating systems may implement virtual seats to hold detached sessions. Each seat should have only one active, attached, session. A session may be attached to multiple seats.\\
+	Each session, either in a graphical or text mode, must have a session bus, implemented as an EMIOS bus, whose location should be stored in the "SESSION\_BUS" environment variable.
+	\subsection{Text user interfaces}
+	TODO: There are a lot of escape codes. Should they be "standardized" here? Should escape codes be dropped and a better alternative developed\footnote{for example \url{https://github.com/withoutboats/notty}}? What about VTs and mouse support?
+	\subsection{Graphical user interfaces, shells and protocols}
+%	Unlike text, which can fully saturate the human cognition pipeline at low bandwidths, graphical content require very large bandwidth to present information to humans. Furthermore, graphical output often has custom control patterns, with inputs needing finer action granularity than in their text counterparts, as well as more types of actions available. For this reason, graphical protocols are far more complex than their text counterparts. As such, developing efficient protocols has proven difficult.\\
+	Each seat should have a seat interface server, which should have discretionary control over the seat's resources. Each session must have a session interface server, which abstracts over the seats it is attached to. The interface servers handle management of all input and output resources assigned to them. Therefore, the interface server includes tasks performed by display servers, compositors, as well as audio route and mix software. An interface server does not need to be a single process or a single codebase.\\
+	Greeter software may be used to create, attach, detach and destroy sessions. The greeter must have priority over sessions for input and output.\\
+	Session servers must be distinct from user shells. Session servers must be distinct from window managers. It is expected that session servers provide mechanism, while window managers provide policy w.r.t. management of surfaces. Since session servers and portions of the window managers are part of the Trusted Compute Base, and due to the complex and inflexible ways hardware abstraction is achieved with efficient resource usage, it is expected that session servers converge to a small number of implementations.\\
+	Beyond peripheral access, which is also a task of the more privileged seat server, session servers also handle the creation of channels between applications in the same session on behalf of the graphical shell. Such channels may be created for IPC such as clipboard, drag-and-drop actions, embedding, window management actions or multimedia recording.
+	\paragraph{Relation with existing protocols}\quad\\
+	TODO: Expand on how the previous should be achieved. Xorg/X11 and Pulse do not need to be considered (implementations are too broken, protocol is very inefficient, ICCCM, does Xenocara satisfy greeter priority?); Wayland \textbf{documentation}/vision is broken from the PoV of previous paragraphs and also far too narrow in scope, but it is perfectly suitable for the graphical display portion. Is Pipewire standardizable?
+	\clearpage
+	\section{Shells}
+	\subsection{Interactive shell}
+	In personal computers, the application that users interact the most with is the shell. This includes both graphical and text shells. A POSIX-compatible operating system is centered even more around shells, due to the philosophy of having many small tools that can be pipelined together instead of large software suites -- most often, the pipelines are created by the shell. Therefore, improvements to the shell can have profound effects on the productivity of users.\\
+	There have been efforts underway to improve the interactivity of shells (fish, Powershell), but these are isolated and have little OS support. One important reason why shells are not very interactive is the "dumbness" of the operating system -- computers understand structured data, but documentation, specifications, etc. are unstructured data. For this reason, a shell cannot readily access data to provide intelligent feedback to the user (and better use human I/O bandwidth). By using EMIOS concepts such as universal serialization and embedding (as well as the API for implementing capability-based security), it is possible to elevate the knowledge of the shell about the available software, improving its interactivity.
+	\subsubsection{Completion}
+	TODO: Calling the program for completion, integration with CapSec open(), MIME Types
+	\subsubsection{Shell recording}
+	Computers are great at automation. However, up to date, all (except maybe for some very recent AI efforts) automation was profoundly explicit, through scripts or even compiled software. However, users are more likely to perform some exploratory tasks until the desired output is obtained, after which they wish to repeat the tasks for other inputs. Typically, the last step in fact involves going through the past operations and rewriting them in a script, which duplicates the work and is a rote task.\\
+	Therefore, it is recommended that shells offer automation from recorded history. Since a shell would know the command history and the pipes used, as well as the other system resources accessed (when CapSec is implemented), it already has almost all information necessary for building a pipeline from already executed commands.
+	\clearpage
+	\section{Data management}
+	\subsection{Data loss prevention}
+	TODO: Mandate optional FEC support and hardware storage confirmation.
+	\subsection{Desktop search}
+	TODO: Provide protocol for desktop search between applications and search engines.
+	\clearpage
+	\section{Application services}
+	\subsection{Configuration storage}
+	TODO: EMIOS serialization simplifies configuration storage. Combining with a central configuration storage (which is common in POSIX world, with the /etc directory), this would allow configuration of software to be decoupled from application logic. Moreover, more powerful configuration editing tools could be used to change configuration across different software without knowing the format in advance, and in more convenient ways than editing text files with a text editor.
+	\subsection{UI primitives}
+	TODO: Implement protocol;\\
+	The UI primitives must follow a common, simple, API. The API should be at least as easy to use as parsing command-line arguments. These primitives are in "naked objects" style. They must be common to UIs are diverse as:
+	\begin{itemize}
+		\item command-line
+		\item keyboard (and mouse) and text
+		\item keyboard, mouse (physical + buttons, touchpad + buttons, physical + touchpad) and graphics
+		\item touchscreen and graphics
+		\item vocal
+		\item neural
+	\end{itemize}
+	The most common tasks are: data insertion and operation application (verbs).\\
+	Notably: command-line is often better for operations (verbs). Traditional form-based keyboard+mouse is better for data insertion.\\
+	Priority of controls: there must be 2 orthogonal classes of priority: necessary and optimal. Necessary priority refers to being unable to continue without input; optimal is about the most efficient input order (think picture + name, followed by date of birth, followed by address, rather than address, date of birth and name, and finally picture).
+	\subsection{Scripting}
+	TODO: Allow embedding of REPLs. A common API should be provided for data types and variables.
+\end{document}
